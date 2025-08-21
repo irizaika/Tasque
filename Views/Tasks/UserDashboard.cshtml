@@ -1,0 +1,32 @@
+﻿@model Tasque.Models.TaskDashboardViewModel
+
+<h3 class="d-flex justify-content-between align-items-center">
+    Your Tasks
+    <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+        Create Task
+    </button>
+</h3>
+
+<!-- Include the modal partial view -->
+@await Html.PartialAsync("../Shared/_CreateTaskPartial", new TaskItem(),
+                         new ViewDataDictionary(ViewData) {
+                                { "ModalId", "createTaskModal" },
+                                { "IsEdit", false }
+                         })
+
+@if (TempData["Message"] != null)
+{
+    <div id="floating-message" class="alert alert-success" role="alert">
+        @TempData["Message"]
+    </div>
+}
+
+@await Html.PartialAsync("_TaskSearchFormPartial", Model, new ViewDataDictionary(ViewData)
+{
+    ["IsAdminBoard"] = false
+})
+
+@await Html.PartialAsync("_TaskTableUserPartial", Model)
+
+<link rel="stylesheet" href="~/css/taskList.css" asp-append-version="true" />
+<script src="~/js/taskList.js"></script>

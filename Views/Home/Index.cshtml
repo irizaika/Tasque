@@ -1,0 +1,74 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using Tasque.Models 
+
+@{
+    ViewData["Title"] = "Home Page";
+    var isLoggedIn = User.Identity.IsAuthenticated;
+    var userName = isLoggedIn ? User.Identity.Name : "Guest";
+    var userRole = isLoggedIn ? (User.IsInRole("Admin") ? "Admin" : "User") : "";
+
+    //var recentTasks = ViewBag.RecentTasks as List<TaskViewModel>; // You must populate this from controller
+}
+
+<div class="container mt-5">
+    <h1 class="display-4">Welcome @userName!</h1>
+
+    <p class="lead">
+        Taskque helps manage tasks efficiently between Admins and Users.
+    </p>
+
+    @if (!isLoggedIn)
+    {
+        <a class="btn btn-primary" href="/Account/Login">Login with Azure AD</a>
+    }
+    else
+    {
+        <div class="alert alert-info mt-4">
+            <strong>Your Role:</strong> @userRole <br />
+            @if (userRole == "Admin")
+            {
+                <span>You can manage all tasks and users.</span>
+            }
+            else
+            {
+                <span>You can manage your own tasks.</span>
+            }
+        </div>
+
+
+        <div class="btn-group mt-3" role="group">
+            @if (userRole == "Admin")
+            {
+                <a href="/Tasks/AdminDashboard" class="btn btn-outline-primary">View All Tasks</a>
+                <a href="/Users" class="btn btn-outline-success">Manage Users</a>
+                <a href="/Tasks/UserDashboard" class="btn btn-outline-primary">My Tasks</a>
+            }
+            else
+            {
+                <a href="/Tasks/UserDashboard" class="btn btn-outline-primary">My Tasks</a>
+                <a href="" data-bs-toggle="modal" data-bs-target="#createTaskModal" class="btn btn-outline-primary">Create New Task</a>
+
+                <!-- Include the modal partial view -->
+                @await Html.PartialAsync("../Shared/_CreateTaskPartial", new TaskItem(),
+                            new ViewDataDictionary(ViewData) {
+                                { "ModalId", "createTaskModal" },
+                                { "IsEdit", false }
+                            })
+            }
+        </div>
+
+        @*         @if (recentTasks != null && recentTasks.Any())
+        {
+            <h3 class="mt-5">Recent Tasks</h3>
+            <ul class="list-group">
+                @foreach (var task in recentTasks)
+                {
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>@task.Title</span>
+                        <span class="badge bg-secondary">@task.Priority</span>
+                    </li>
+                }
+            </ul>
+        } *@
+    }
+</div>

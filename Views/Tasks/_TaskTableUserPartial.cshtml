@@ -1,0 +1,51 @@
+﻿@model Tasque.Models.TaskDashboardViewModel
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Task</th>
+            <th>Additional Info</th>
+            <th>Priority</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody id="taskTableBody">
+        @foreach (var task in Model.Tasks)
+        {
+            var modalId = $"editTaskModal-{task.Id}";
+            <tr class="task-row"
+                data-priority="@task.Priority"
+                data-group="@task.Group"
+                data-status="@task.Status">
+                <td>@task.Id</td>
+                <td>@task.Title</td>
+                <td class="desc-cell">
+                    <button type="button"
+                            class="btn btn-sm edit-description-btn"
+                            data-task-id="@task.Id"
+                            data-task-desc="@task.Description">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <span class="desc-text">@task.Description</span>
+                </td>
+                <td>@task.Priority</td>
+                <td>@task.DueDate?.ToShortDateString()</td>
+                <td>@task.Status</td>
+                <td>
+                    <button type="button" class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#@modalId">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    @await Html.PartialAsync("../Shared/_CreateTaskPartial", task, new ViewDataDictionary(ViewData) {
+                { "ModalId", modalId },
+                { "IsEdit", true }
+                })
+                </td>
+            </tr>
+
+            @await Html.PartialAsync("_EditDescriptionModalPartial")
+        }
+    </tbody>
+</table>

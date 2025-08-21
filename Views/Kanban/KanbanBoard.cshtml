@@ -1,0 +1,164 @@
+﻿@model KanbanBoardViewModel
+
+<h3 class="d-flex justify-content-between align-items-center mb-4">
+    Progress Board
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+        <i class="bi bi-plus-circle me-1"></i> Create Task
+    </button>
+</h3>
+
+@await Html.PartialAsync("../Shared/_CreateTaskPartial", new TaskItem(),
+            new ViewDataDictionary(ViewData) {
+        { "ModalId", "createTaskModal" },
+        { "IsEdit", false }
+    })
+
+@if (TempData["Message"] != null)
+{
+    <div id="floating-message" class="alert alert-success" role="alert">
+        @TempData["Message"]
+    </div>
+}
+
+<form asp-action="KanbanBoard" asp-controller="Kanban" method="get" class="mb-4">
+    <div class="d-flex align-items-center">
+        <label for="groupBySelect" class="form-label fw-bold me-2">Group by:</label>
+        <select name="groupBy" id="groupBySelect" class="form-select w-auto" onchange="this.form.submit()">
+            <option value="None" selected="@(Model.GroupBy == "None")">None</option>
+            <option value="AssignedTo" selected="@(Model.GroupBy == "AssignedTo")">Assigned To</option>
+            <option value="Priority" selected="@(Model.GroupBy == "Priority")">Priority</option>
+            <option value="Group" selected="@(Model.GroupBy == "Group")">Group</option>
+        </select>
+    </div>
+</form>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-info-subtle fw-bold text-center">To Do</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-warning-subtle fw-bold text-center">In Progress</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-success-subtle fw-bold text-center">Done</div>
+        </div>
+    </div>
+</div>
+
+<div id="globalSpinner" class="d-none position-fixed top-50 start-50 translate-middle">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span >Loading...</span>
+    </div>
+</div>
+
+@foreach (var group in Model.GroupedTasks)
+{
+    <div class="mb-4">
+        <h5 class="fw-bold text-secondary border-0 pb-2 mb-3">
+            @group.GroupKey
+        </h5>
+
+        <div class="row g-3" data-groupby="@Model.GroupBy">
+            <div class="col-md-4">
+                <div class="kanban-column card border-0 shadow-sm"
+                     data-group-key="@group.GroupKey" data-status="ToDo">
+                    <div class="card-body p-2">
+                        @foreach (var task in group.ToDo)
+                        {
+                            <div class="kanban-item card mb-2 p-2 shadow-sm border-start border-3 edit-task-item"
+                                 draggable="true"
+                                 data-id="@task.Id"
+                                 data-title="@task.Title"
+                                 data-description="@task.Description"
+                                 data-group="@task.Group"
+                                 data-status="@task.Status"
+                                 data-priority="@task.Priority"
+                                 data-duedate="@task.DueDate?.ToString("yyyy-MM-dd")">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <strong>@task.Title</strong>
+                                    <span class="task-actions">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-task-btn"
+                                                data-bs-toggle="modal" data-bs-target="#editTaskModal">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                                <small class="text-muted">@task.Description</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="kanban-column card border-0 shadow-sm"
+                     data-group-key="@group.GroupKey" data-status="InProgress">
+                    <div class="card-body p-2">
+                        @foreach (var task in group.InProgress)
+                        {
+                            <div class="kanban-item card mb-2 p-2 shadow-sm border-start border-3 edit-task-item"
+                                 draggable="true"
+                                 data-id="@task.Id"
+                                 data-title="@task.Title"
+                                 data-description="@task.Description"
+                                 data-group="@task.Group"
+                                 data-status="@task.Status"
+                                 data-priority="@task.Priority"
+                                 data-duedate="@task.DueDate?.ToString("yyyy-MM-dd")">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <strong>@task.Title</strong>
+                                    <span class="task-actions">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary edit-task-btn"
+                                                data-bs-toggle="modal" data-bs-target="#editTaskModal">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                                <small class="text-muted">@task.Description</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="kanban-column card border-0 shadow-sm"
+                     data-group-key="@group.GroupKey" data-status="Done">
+                    <div class="card-body p-2">
+                        @foreach (var task in group.Done)
+                        {
+                            <div class="kanban-item card mb-2 p-2 shadow-sm border-start border-3"
+                                 draggable="true"
+                                 data-id="@task.Id">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <strong>@task.Title</strong>
+                                    <span class="task-actions">
+                                        <button type="button" class="btn btn-sm btn-outline-success close-task-btn"
+                                                data-task-id="@task.Id"
+                                                title="Close Task">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                                <small class="text-muted">@task.Description</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@await Html.PartialAsync("../Shared/_CreateTaskPartial", new Tasque.Models.TaskItem(), new ViewDataDictionary(ViewData) {
+    { "ModalId", "editTaskModal" },
+    { "IsEdit", true }
+})
+
+<link rel="stylesheet" href="~/css/kanbanboard.css" asp-append-version="true" />
+<script src="~/js/kanbanboard.js"></script>

@@ -1,0 +1,77 @@
+﻿@{
+    ViewData["Title"] = "Privacy Policy";
+}
+<h1>@ViewData["Title"]</h1>
+
+<p><strong>Effective Date:</strong> August 7, 2025</p>
+<p><strong>Application Name:</strong> Taskque</p>
+<p><strong>Developer:</strong> Irina Zaika – for demo/portfolio purposes</p>
+
+<hr />
+
+<h2>What Data We Store</h2>
+<p>
+    Taskque stores only task-related data to support basic task management functionality. This includes:
+</p>
+<ul>
+    <li>Task titles and descriptions</li>
+    <li>Task status (To Do, In Progress, Done)</li>
+    <li>Priority levels</li>
+    <li>Due dates</li>
+    <li>Assigned users (Azure AD user IDs or emails)</li>
+    <li>Task creation and update timestamps</li>
+</ul>
+<p>
+    No sensitive personal data such as passwords, addresses, or payment information is collected or stored.
+</p>
+
+<h2>How Your Data Is Protected</h2>
+<p>
+    Taskque uses <strong>Microsoft Entra ID</strong> (formerly Azure Active Directory) to provide secure authentication and authorization.
+</p>
+<ul>
+    <li><strong>Authentication:</strong> Only authenticated users via Entra ID can access the app.</li>
+    <li>
+        <strong>Authorization:</strong> Role-based access ensures that:
+        <ul>
+            <li>Admins can view and manage all tasks</li>
+            <li>Regular users can view and manage only their own tasks</li>
+        </ul>
+    </li>
+</ul>
+<p>
+    Microsoft Entra ID uses industry-standard OAuth 2.0 and OpenID Connect protocols.
+</p>
+
+
+<h2>Cookies and Tracking</h2>
+<p>
+    This application does <strong>not</strong> use cookies, third-party tracking, or analytics tools.
+</p>
+
+<h2>Demo Application Notice</h2>
+<p>
+    Taskque is a <strong>portfolio/demo application</strong> intended solely for educational and demonstration purposes.
+</p>
+<ul>
+    <li>It is not a production or commercial product</li>
+    <li>Data may be reset or deleted at any time</li>
+    <li>Please avoid entering any real or sensitive personal information</li>
+</ul>
+
+<h2>Microsoft Entra ID Integration Overview</h2>
+<p>
+    Taskque uses Microsoft Entra ID to handle:
+</p>
+<ul>
+    <li>Secure user sign-in</li>
+    <li>Group-based access control (Admins and Users)</li>
+    <li>Retrieval of basic user profile data (name, email, group membership)</li>
+</ul>
+<p>
+    For more information, visit the
+    <a href="https://learn.microsoft.com/en-us/entra/identity/" target="_blank" rel="noopener noreferrer">
+        Microsoft Entra ID documentation
+    </a>.
+</p>
+

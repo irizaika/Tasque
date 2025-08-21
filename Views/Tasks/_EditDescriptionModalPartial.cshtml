@@ -1,0 +1,27 @@
+﻿<div class="modal fade" id="editDescriptionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editDescriptionForm" asp-action="UpdateDescription" asp-controller="Tasks" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="editTaskId" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Task Description</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editDescriptionText" class="form-label">Description</label>
+                        <textarea class="form-control" id="editDescriptionText" name="Description" rows="4"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

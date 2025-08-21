@@ -1,0 +1,37 @@
+﻿ /*description row*/
+.desc-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+/*    cursor: pointer;*/
+}
+.desc-text {
+    max-width: 200px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+
+/*floating message*/
+/*#floating-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1055;*/ /* Higher than Bootstrap modals, etc. */
+    /*padding: 15px 25px;
+    border-radius: 8px;
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideDown 0.3s ease-out;
+}*/
+
+/*hide floating message*/
+/*.hide {
+    display: none !important;
+}*/

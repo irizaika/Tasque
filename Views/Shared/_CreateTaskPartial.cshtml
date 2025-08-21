@@ -1,0 +1,88 @@
+﻿@model Tasque.Models.TaskItem
+
+@{
+    var modalId = ViewData["ModalId"] as string ?? "createTaskModal";
+    var isEdit = ViewData["IsEdit"] as bool? ?? false;
+
+    var formAction = isEdit ? "Edit" : "Create";
+    var modalTitle = isEdit ? "Edit Task" : "Create Task";
+    var submitLabel = isEdit ? "Edit" : "Create";
+    var disabled = !User.IsInRole("Admin");
+}
+
+<div class="modal fade" id="@modalId" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="@formAction" asp-controller="Tasks" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createTaskModalLabel">@modalTitle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Hidden ID field (used for edit) -->
+                    @if (isEdit)
+                    {
+                        <input type="hidden" asp-for="Id" />
+                    }
+
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label"></label>
+                        <input asp-for="Title" class="form-control" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <!-- Group -->
+                    <div class="mb-3">
+                        <label asp-for="Group" class="form-label"></label>
+                        <input asp-for="Group" class="form-control" />
+                        <span asp-validation-for="Group" class="text-danger"></span>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label asp-for="Status" class="form-label"></label>
+                        <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<Tasque.Models.TaskStatus>()"></select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </div>
+
+                    <!-- Priority -->
+                    <div class="mb-3">
+                        <label asp-for="Priority" class="form-label"></label>
+                        <select asp-for="Priority" 
+                                class="form-select" 
+                                asp-items="Html.GetEnumSelectList<Tasque.Models.TaskPriority>()"
+                                disabled="@(disabled ? "disabled" : null)">
+                        </select>
+                        <span asp-validation-for="Priority" class="text-danger"></span>
+                    </div>
+
+                    <!-- Due Date -->
+                    <div class="mb-3">
+                        <label asp-for="DueDate" class="form-label"></label>
+                        <input asp-for="DueDate" 
+                                type="date" 
+                                class="form-control" 
+                                disabled="@(disabled ? "disabled" : null)"/>
+                        <span asp-validation-for="DueDate" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">@submitLabel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

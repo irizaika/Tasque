@@ -1,0 +1,48 @@
+﻿@model IEnumerable<Tasque.Models.TaskItem>
+
+@foreach (var task in Model) // model here is a task gruop
+{
+    var modalId = $"editTaskModal-{task.Id}";
+    <tr>
+        <td>@task.Id</td>
+        <td>@task.Title</td>
+        <td class="desc-cell" title="@task.Description" data-task-id="@task.Id">@task.Description</td>
+        <td>@task.Priority</td>
+        <td>@task.DueDate?.ToShortDateString()</td>
+        <td>@task.Status</td>
+        <td>@task.CreatedAt.ToShortDateString() @task.CreatedAt.ToShortTimeString()</td>
+        <td>@task.CreatedBy</td>
+        <td>@task.AssignedTo</td>
+        <td>
+            <button type="button" class="btn btn-sm" data-bs-toggle="modal" data-bs-target="#@modalId">
+                <i class="bi bi-pencil"></i>
+            </button>
+            @await Html.PartialAsync("../Shared/_CreateTaskPartial", task, new ViewDataDictionary(ViewData) {
+                { "ModalId", modalId },
+                { "IsEdit", true }
+            })
+            <form asp-controller="Tasks" asp-action="Delete" asp-route-id="@task.Id" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm"
+                        onclick="return confirm('Are you sure you want to delete this task?');">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </form>
+        </td>
+    </tr>
+
+    <tr class="edit-row d-none" data-task-id="@task.Id">
+        <td colspan="9">
+            <form asp-action="UpdateDescription" asp-controller="Tasks" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" value="@task.Id" />
+                <div class="mb-3">
+                    <label for="desc-@task.Id">Edit Description</label>
+                    <textarea class="form-control" id="desc-@task.Id" name="Description">@task.Description</textarea>
+                </div>
+                <button type="submit" class="btn btn-sm btn-success">Save</button>
+                <button type="button" class="btn btn-sm btn-secondary cancel-edit" data-task-id="@task.Id">Cancel</button>
+            </form>
+        </td>
+    </tr>
+}

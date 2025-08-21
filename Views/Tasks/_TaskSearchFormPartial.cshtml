@@ -1,0 +1,76 @@
+﻿@model Tasque.Models.TaskDashboardViewModel
+@{
+    bool isAdminBoard = ViewData["IsAdminBoard"] as bool? ?? false;
+    var statusQuery = Context.Request.Query["status"].ToString();
+    var priorityQuery = Context.Request.Query["priority"].ToString();
+    var searchTitleQuery = Context.Request.Query["searchTitle"].ToString();
+    var dueDateQuery = Context.Request.Query["dueDate"].ToString();
+    var selectedEmail = Context.Request.Query["assignedTo"].ToString();
+}
+
+<form method="get" asp-controller="Tasks" asp-action="Search" class="row g-2 mb-3">
+    <div class="col">
+        <input type="text" name="searchTitle" value="@searchTitleQuery" placeholder="Search by title" class="form-control" />
+    </div>
+
+    <div class="col">
+        <select name="status" class="form-select">
+            <option value="">All Statuses</option>
+            @foreach (var s in Enum.GetValues(typeof(Tasque.Models.TaskStatus)))
+            {
+                <option value="@s" selected="@(statusQuery == s.ToString() ? "selected" : null)">
+                    @s
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="col">
+        <select name="priority" class="form-select">
+            <option value="">All Priorities</option>
+            @foreach (var p in Enum.GetValues(typeof(TaskPriority)))
+            {
+                <option value="@p" selected="@(priorityQuery == p.ToString() ? "selected" : null)">
+                    @p
+                </option>
+            }
+        </select>
+    </div>
+
+    <div class="col">
+        <input type="date" name="dueDate" value="@dueDateQuery" class="form-control" />
+    </div>
+
+    @if (isAdminBoard)
+    {
+        <div class="col-auto">
+            <select name="assignedTo" class="form-select">
+                <option value="">All Users</option>
+                @foreach (var email in Model.UserEmailList)
+                {
+                    <option value="@email" selected="@(selectedEmail == email.ToString() ? "selected" : null)">
+                        @email
+                    </option> 
+                }
+            </select>
+        </div>
+    }
+    <input type="hidden" name="isAdminBoard" value="@(isAdminBoard.ToString().ToLower())" class="form-control" />
+
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a asp-action="Reset" asp-route-isAdminBoard="@isAdminBoard" class="btn btn-secondary">Reset</a>
+    </div>
+    <div class ="col-auto">
+        <select id="groupBySelect" class="form-select">
+            <option value="">Group by: None</option>
+            @if (isAdminBoard)
+            {
+                <option value="assignedto">Assigned To</option>
+            }
+            <option value="priority">Priority</option>
+            <option value="group">Group</option>
+            <option value="status">Status</option>
+        </select>
+    </div>
+</form>

@@ -1,0 +1,78 @@
+﻿@model Tasque.Models.TaskDashboardViewModel
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Task</th>
+            <th>Additional Info</th>
+            <th>Group</th>
+            <th>Priority</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th>When added</th>
+            <th>Owner Email</th>
+            <th>Assigned to</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody id="taskTableBody">
+        @foreach (var task in Model.Tasks)
+        {
+            var modalId = $"editTaskModal-{task.Id}";
+            <tr class="task-row"
+                data-assignedto="@task.AssignedTo"
+                data-priority="@task.Priority"
+                data-group="@task.Group"
+                data-status="@task.Status">
+                <td>@task.Id</td>
+                <td>@task.Title</td>
+                <td class="desc-cell">
+                    <button type="button"
+                            class="btn btn-sm edit-description-btn"
+                            data-task-id="@task.Id"
+                            data-task-desc="@task.Description">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <span class="desc-text">@task.Description</span>
+                </td>
+                <td>@task.Group</td>
+                <td>@task.Priority</td>
+                <td>@task.DueDate?.ToShortDateString()</td>
+                <td>@task.Status</td>
+                <td>@task.CreatedAt.ToShortDateString() @task.CreatedAt.ToShortTimeString()</td>
+                <td>@task.CreatedBy</td>
+                <td>@task.AssignedTo</td>
+                <td>
+                    <div class="edit-task-item" data-id="@task.Id"
+                         data-title="@task.Title"
+                         data-description="@task.Description"
+                         data-group="@task.Group"
+                         data-status="@task.Status"
+                         data-priority="@task.Priority"
+                         data-duedate="@task.DueDate?.ToString("yyyy-MM-dd")">          
+                            <button type="button" class="btn btn-sm edit-task-btn" data-bs-toggle="modal" data-bs-target="#editTaskModal">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                    </div>
+
+                    <form asp-controller="Tasks" asp-action="Delete" asp-route-id="@task.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm"
+                                onclick="return confirm('Are you sure you want to delete this task?');">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+
+            @await Html.PartialAsync("_EditDescriptionModalPartial")
+        }
+    </tbody>
+</table>
+
+<!-- Shared edit modal (one copy only) -->
+@await Html.PartialAsync("../Shared/_CreateTaskPartial", new Tasque.Models.TaskItem(), new ViewDataDictionary(ViewData) {
+    { "ModalId", "editTaskModal" },
+    { "IsEdit", true }
+})
