@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using Tasque.Interfaces;
 using Tasque.Models;
 using TaskStatus = Tasque.Models.TaskStatus;
@@ -35,8 +33,6 @@ public class TasksController : Controller
     {
         _taskService.CreateTask(task, UserEmail??"");
         return RedirectToReferrerOr(nameof(UserDashboard));
-
-       // return RedirectToAction(nameof(UserDashboard));
     }
 
     [HttpPost]

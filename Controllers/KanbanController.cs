@@ -95,23 +95,6 @@ public class KanbanController : Controller
         return Ok();
     }
 
-    public class DragUpdateModel
-    {
-        public int Id { get; set; }
-        public string Status { get; set; }
-        public string GroupBy { get; set; }
-        public string GroupValue { get; set; }
-    }
-
-
-
-    //[HttpPost]
-    //public IActionResult UpdateTaskStatus(int id, TaskStatus newStatus)
-    //{
-    //    _taskService.UpdateStatus(id, newStatus);
-    //    return Ok();
-    //}
-
     [HttpPost]
     public IActionResult CloseTask(int id)
     {
