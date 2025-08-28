@@ -37,18 +37,70 @@
                 "Content-Type": "application/json",
                 "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
             }
-        })
-            .then(response => {
-                if (response.ok) {
-                    // Remove task from UI
-                    const taskElem = btn.closest(".kanban-item");
-                    if (taskElem) taskElem.remove();
-                } else {
-                    alert("Failed to close task");
+        }).then(response => {
+            if (response.ok) {
+                const taskElem = btn.closest(".kanban-item");
+                if (taskElem) {
+                    taskElem.dataset.status = "Closed";
+
+                    // Update button to reopen
+                    updateTaskButton(taskElem, "Closed");
+
+                    // Move into Closed column
+                    const closedCol = document.querySelector(`.kanban-column[data-status="Closed"][data-group-key="${taskElem.closest('[data-group-key]').dataset.groupKey}"] .card-body`);
+                    if (closedCol) {
+                        closedCol.appendChild(taskElem);
+                    }
+
+                    bindReopenTaskButtons();
                 }
-            })
-            .catch(err => console.error(err));
+            } else {
+                alert("Failed to close task");
+            }
+        });
     }
+
+    function reopenTaskHandler(event) {
+        event.preventDefault();
+        const btn = event.currentTarget;
+        const taskId = btn.getAttribute("data-task-id");
+
+        if (!confirm("Reopen this task?")) return;
+
+        fetch(`/Kanban/ReopenTask/${taskId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        }).then(response => {
+            if (response.ok) {
+                const taskElem = btn.closest(".kanban-item");
+                if (taskElem) {
+                    taskElem.dataset.status = "ToDo";
+
+                    // Update button back to edit
+                    updateTaskButton(taskElem, "ToDo");
+
+                    // Move to ToDo column
+                    const todoCol = document.querySelector(`.kanban-column[data-status="ToDo"][data-group-key="${taskElem.closest('[data-group-key]').dataset.groupKey}"] .card-body`);
+                    if (todoCol) {
+                        todoCol.appendChild(taskElem);
+                    }
+
+                    bindEditTaskButtons();
+                    bindCloseTaskButtons();
+                }
+            } else {
+                alert("Failed to reopen task");
+            }
+        });
+    }
+
+    function bindReopenTaskButtons() {
+        document.querySelectorAll(".reopen-task-btn").forEach(btn => {
+            btn.removeEventListener("click", reopenTaskHandler);
+            btn.addEventListener("click", reopenTaskHandler);
+        });
+    }
+
 
     // Update task button based on status
     function updateTaskButton(taskElem, status) {
@@ -59,6 +111,12 @@
             actionsSpan.innerHTML = `
         <button type="button" class="btn btn-sm btn-outline-success close-task-btn" data-task-id="${taskElem.dataset.id}" title="Close Task">
           <i class="bi bi-check-circle"></i>
+        </button>
+      `;
+        } else if (status === 'Closed') {
+            actionsSpan.innerHTML = `
+        <button type="button" class="btn btn-sm btn-outline-success reopen-task-btn" data-task-id="${taskElem.dataset.id}" title="Close Task">
+          <i class="bi bi-arrow-counterclockwise"></i>
         </button>
       `;
         } else {
@@ -131,6 +189,7 @@
     bindCloseTaskButtons();
     bindColumns();
     bindEditTaskButtons();
+    bindReopenTaskButtons();
 });
 
 function bindEditTaskButtons() {
