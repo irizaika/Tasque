@@ -16,38 +16,19 @@ public class KanbanController : Controller
         _taskService = taskService;
     }
 
-    //public IActionResult KanbanBoard()
-    //{
-    //    return View();
-    //}
-
-    //public IActionResult KanbanBoard()
-    //{
-    //    var tasks = _taskService.GetAllTasks(); // returns IEnumerable<Task>
-
-    //    var model = new KanbanViewModel
-    //    {
-    //        ToDo = tasks.Where(t => t.Status == TaskStatus.ToDo).ToList(),
-    //        InProgress = tasks.Where(t => t.Status == TaskStatus.InProgress).ToList(),
-    //        Done = tasks.Where(t => t.Status == TaskStatus.Done).ToList()
-    //    };
-
-    //    return View(model);
-    //}
     public IActionResult KanbanBoard(string groupBy = "None")
     {
         var tasks = _taskService.GetAllTasks();
 
-        // Decide grouping key
+        // Select grouping strategy
         Func<TaskItem, string> keySelector = groupBy switch
         {
             "Priority" => t => t.Priority.ToString(),
             "Group" => t => string.IsNullOrWhiteSpace(t.Group) ? "No Group" : t.Group!,
-            "AssignedTo" => t =>  string.IsNullOrWhiteSpace(t.AssignedTo) ? "Unassigned" : t.AssignedTo!,
+            "AssignedTo" => t => string.IsNullOrWhiteSpace(t.AssignedTo) ? "Unassigned" : t.AssignedTo!,
             _ => _ => "All Tasks"
         };
 
-        // Group and map into view-friendly model
         var groupedModels = tasks
             .GroupBy(keySelector)
             .Select(g => new KanbanGroup
@@ -55,7 +36,8 @@ public class KanbanController : Controller
                 GroupKey = g.Key,
                 ToDo = g.Where(t => t.Status == TaskStatus.ToDo).ToList(),
                 InProgress = g.Where(t => t.Status == TaskStatus.InProgress).ToList(),
-                Done = g.Where(t => t.Status == TaskStatus.Done).ToList()
+                Done = g.Where(t => t.Status == TaskStatus.Done).ToList(),
+                Closed = g.Where(t => t.Status == TaskStatus.Closed).ToList()
             })
             .ToList();
 
@@ -71,28 +53,36 @@ public class KanbanController : Controller
     [HttpPost]
     public IActionResult UpdateTaskFromDrag([FromBody] DragUpdateModel update)
     {
+        if (update is null) return BadRequest();
+
         var task = _taskService.GetTaskById(update.Id);
         if (task == null) return NotFound();
 
         // Always update status
-        task.Status = Enum.Parse<TaskStatus>(update.Status);
+        if (Enum.TryParse<TaskStatus>(update.Status, out var newStatus))
+        {
+            task.Status = newStatus;
+        }
 
-        // Update based on grouping
+        // Update depending on current grouping
         switch (update.GroupBy)
         {
             case "Priority":
-                task.Priority = Enum.Parse<TaskPriority>(update.GroupValue);
+                if (Enum.TryParse<TaskPriority>(update.GroupValue, out var priority))
+                    task.Priority = priority;
                 break;
+
             case "AssignedTo":
                 task.AssignedTo = update.GroupValue == "Unassigned" ? null : update.GroupValue;
                 break;
+
             case "Group":
                 task.Group = update.GroupValue == "No Group" ? null : update.GroupValue;
                 break;
         }
 
         _taskService.UpdateTask(task);
-        return Ok();
+        return Ok(new { Message = "Task updated successfully!" });
     }
 
     [HttpPost]
@@ -104,8 +94,19 @@ public class KanbanController : Controller
         task.Status = TaskStatus.Closed;
         _taskService.UpdateTask(task);
 
-        return Ok();
+        return Ok(new { Message = "Task closed successfully!" });
     }
 
+    [HttpPost]
+    public IActionResult ReopenTask(int id)
+    {
+        var task = _taskService.GetTaskById(id);
+        if (task == null) return NotFound();
 
+        // Business rule: when reopening, default back to ToDo
+        task.Status = TaskStatus.ToDo;
+        _taskService.UpdateTask(task);
+
+        return Ok(new { Message = "Task reopened successfully!" });
+    }
 }

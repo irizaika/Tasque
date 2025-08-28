@@ -6,5 +6,6 @@
         public List<TaskItem> ToDo { get; set; }
         public List<TaskItem> InProgress { get; set; }
         public List<TaskItem> Done { get; set; }
+        public List<TaskItem> Closed { get; set; }
     }
 }

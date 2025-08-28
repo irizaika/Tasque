@@ -81,23 +81,26 @@ It is **not production-ready** — data may be reset or deleted at any time.
 ### Kanban
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET    | `/Kanban/KanbanBoard?groupBy={groupBy}` | Returns grouped Kanban view |
-| POST   | `/Kanban/UpdateTaskFromDrag` | Updates task on drag/drop |
+| GET    | `/Kanban/KanbanBoard?groupBy={groupBy}` | Returns grouped Kanban view (supports grouping by `Priority`, `Group`, `AssignedTo`, or `None`) |
+| POST   | `/Kanban/UpdateTaskFromDrag` | Updates task when dragged/dropped between columns or groups |
 | POST   | `/Kanban/CloseTask/{id}` | Marks a task as closed |
+| POST   | `/Kanban/ReopenTask/{id}` | Reopens a closed task (moves it back to **To Do**) |
+
 
 ### Tasks
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET    | `/Tasks/Index` | List tasks for user (or all if admin) |
-| GET    | `/Tasks/Create` | Task creation form |
-| POST   | `/Tasks/Create` | Create a task |
-| POST   | `/Tasks/Edit` | Update a task |
-| POST   | `/Tasks/Delete/{id}` | Delete a task |
-| GET    | `/Tasks/AdminDashboard` | Admin dashboard (all tasks) |
-| GET    | `/Tasks/UserDashboard` | User dashboard (own tasks) |
-| POST   | `/Tasks/UpdateDescription` | Update only task description |
-| GET    | `/Tasks/Search` | Search/filter tasks |
-| GET    | `/Tasks/Reset` | Reset dashboard |
+| Method | Endpoint | Description | Notes |
+|--------|----------|-------------|-------|
+| GET    | `/Tasks/Index` | List tasks for user (or all if admin) | Returns `Index` view with tasks. |
+| GET    | `/Tasks/Create` | Task creation form | Returns empty form for new task. |
+| POST   | `/Tasks/Create` | Create a task | Requires anti-forgery token. Redirects to dashboard or referring page. |
+| POST   | `/Tasks/Edit` | Update a task | Requires anti-forgery token. Only allowed for Admin or assigned user. Redirects back to referring page. |
+| POST   | `/Tasks/Delete/{id}` | Delete a task | Requires anti-forgery token. Only allowed for Admin or assigned user. Redirects back to referring page. |
+| GET    | `/Tasks/AdminDashboard` | Admin dashboard (all tasks) | Admin role required. |
+| GET    | `/Tasks/UserDashboard` | User dashboard (own tasks) | User or Admin role required. |
+| POST   | `/Tasks/UpdateDescription` | Update only task description | Requires anti-forgery token. Redirects back to referring page. |
+| GET    | `/Tasks/Search` | Search/filter tasks | Returns `AdminDashboard` or `UserDashboard` view depending on role. |
+| GET    | `/Tasks/Reset` | Reset dashboard | Returns default `AdminDashboard` or `UserDashboard` view. |
+
 
 ---
 

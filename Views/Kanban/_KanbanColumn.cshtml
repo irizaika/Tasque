@@ -1,0 +1,17 @@
+﻿@model KanbanColumnViewModel
+
+<div class="col-md-3">
+    <div class="kanban-column card border-0 shadow-sm"
+         data-group-key="@Model.GroupKey"
+         data-status="@Model.Status">
+        @* <div class="card-header fw-bold text-center @Model.HeaderCss"> *@
+        @*     @Model.Title *@
+        @* </div> *@
+        <div class="card-body p-2">
+            @foreach (var task in Model.Tasks)
+            {
+                @await Html.PartialAsync("_KanbanTaskItem", task)
+            }
+        </div>
+    </div>
+</div>

@@ -20,6 +20,24 @@ public class TasksController : Controller
     private string? UserEmail => _context.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
     private bool IsAdmin => User?.IsInRole("Admin") ?? false;
 
+    // ---------- Helpers ----------
+    private TaskDashboardViewModel BuildDashboard(IEnumerable<TaskItem> tasks, bool includeEmails)
+    {
+        return new TaskDashboardViewModel
+        {
+            Tasks = [.. tasks],
+            CurrentUserEmail = UserEmail ?? "",
+            UserEmailList = includeEmails ? [.. _taskService.GetAllAssignees()] : []
+        };
+    }
+
+    private IActionResult RedirectToReferrerOr(string defaultAction, object? routeValues = null)
+    {
+        var referer = Request.Headers["Referer"].ToString();
+        return !string.IsNullOrEmpty(referer) ? Redirect(referer) : RedirectToAction(defaultAction, routeValues);
+    }
+
+    // ---------- Actions ----------
     public IActionResult Index()
     {
         var tasks = _taskService.GetTasksForUser(UserEmail ?? "", IsAdmin);
@@ -29,9 +47,10 @@ public class TasksController : Controller
     public IActionResult Create() => View();
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public IActionResult Create(TaskItem task)
     {
-        _taskService.CreateTask(task, UserEmail??"");
+        _taskService.CreateTask(task, UserEmail ?? "");
         return RedirectToReferrerOr(nameof(UserDashboard));
     }
 
@@ -45,7 +64,7 @@ public class TasksController : Controller
 
         _taskService.UpdateTask(task, updatedTask);
         TempData["Message"] = "Task updated successfully!";
-        return RedirectToReferrerOr("Index");
+        return RedirectToReferrerOr(nameof(UserDashboard));
     }
 
     [HttpPost]
@@ -58,37 +77,21 @@ public class TasksController : Controller
 
         _taskService.DeleteTask(task);
         TempData["Message"] = "Task deleted successfully!";
-        return RedirectToReferrerOr("Index");
+        return RedirectToReferrerOr(nameof(UserDashboard));
     }
 
     [Authorize(Roles = "Admin")]
     public IActionResult AdminDashboard()
     {
-        var allTasks = _taskService.GetTasksForUser(UserEmail ?? "", true);
-        var emails = _taskService.GetAllAssignees();
-
-        var taskListViewModel = new TaskDashboardViewModel()
-        {
-            Tasks = [.. allTasks],
-            CurrentUserEmail = UserEmail ?? "",
-            UserEmailList = [.. emails]
-        };
-
-        return View(taskListViewModel);
+        var tasks = _taskService.GetTasksForUser(UserEmail ?? "", true);
+        return View(BuildDashboard(tasks, includeEmails: true));
     }
 
     [Authorize(Roles = "User,Admin")]
     public IActionResult UserDashboard()
     {
         var tasks = _taskService.GetTasksForUser(UserEmail ?? "", false);
-
-        var taskListViewModel = new TaskDashboardViewModel()
-        {
-            Tasks = [.. tasks],
-            CurrentUserEmail= UserEmail??"",
-            UserEmailList = []
-        };
-        return View(taskListViewModel);
+        return View(BuildDashboard(tasks, includeEmails: false));
     }
 
     [HttpPost]
@@ -97,52 +100,31 @@ public class TasksController : Controller
     {
         var task = _taskService.GetTaskById(id);
         if (task == null) return NotFound();
+        if (!IsAdmin && task.AssignedTo != UserEmail) return Forbid();
+
         task.Description = description;
         _taskService.UpdateTask(task, task);
-        TempData["Message"] = "Task updated successfully!";
-        return RedirectToReferrerOr("Index");
-    }
 
-    private IActionResult RedirectToReferrerOr(string action)
-    {
-        var referer = Request.Headers["Referer"].ToString();
-        return !string.IsNullOrEmpty(referer) ? Redirect(referer) : RedirectToAction(action);
+        TempData["Message"] = "Task updated successfully!";
+        return RedirectToReferrerOr(nameof(UserDashboard));
     }
 
     public IActionResult Search(string searchTitle, TaskStatus? status, TaskPriority? priority, DateTime? dueDate, string assignedTo, string isAdminBoard)
     {
-        var tasks = _taskService.Search(searchTitle, status, priority, dueDate, isAdminBoard == "true" ? assignedTo: UserEmail ?? "");
-        var emails = _taskService.GetAllAssignees();//todo no neew to get it all the time
+        bool adminBoard = isAdminBoard == "true";
+        var searchUser = adminBoard ? assignedTo : (UserEmail ?? "");
 
-        var taskListViewModel = new TaskDashboardViewModel()
-        {
-            Tasks = [.. tasks],
-            CurrentUserEmail = UserEmail ?? "",
-            UserEmailList = [.. emails]
-        };
-        if (isAdminBoard == "true")
-        {
-            return View("AdminDashboard", taskListViewModel);
-        }
-        return View("UserDashboard", taskListViewModel);
+        var tasks = _taskService.Search(searchTitle, status, priority, dueDate, searchUser);
+        var vm = BuildDashboard(tasks, includeEmails: adminBoard);
+
+        return adminBoard ? View("AdminDashboard", vm) : View("UserDashboard", vm);
     }
 
     public IActionResult Reset(bool isAdminBoard)
     {
-        var allTasks = _taskService.GetTasksForUser(UserEmail ?? "", isAdminBoard);
-        var emails = _taskService.GetAllAssignees();//todo no need to get it all the time
+        var tasks = _taskService.GetTasksForUser(UserEmail ?? "", isAdminBoard);
+        var vm = BuildDashboard(tasks, includeEmails: isAdminBoard);
 
-        var taskListViewModel = new TaskDashboardViewModel()
-        {
-            Tasks = [.. allTasks],
-            CurrentUserEmail = UserEmail ?? "",
-            UserEmailList = [.. emails]
-        };
-
-        if (isAdminBoard == true)
-        {
-            return View("AdminDashboard", taskListViewModel);
-        }
-        return View("UserDashboard", taskListViewModel);
+        return isAdminBoard ? View("AdminDashboard", vm) : View("UserDashboard", vm);
     }
 }

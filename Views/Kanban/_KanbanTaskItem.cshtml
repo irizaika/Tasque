@@ -1,0 +1,43 @@
+﻿@model Tasque.Models.TaskItem
+
+<div class="kanban-item card mb-2 p-2 shadow-sm border-start border-3 edit-task-item"
+     draggable="true"
+     data-id="@Model.Id"
+     data-title="@Model.Title"
+     data-description="@Model.Description"
+     data-group="@Model.Group"
+     data-status="@Model.Status"
+     data-priority="@Model.Priority"
+     data-duedate="@Model.DueDate?.ToString("yyyy-MM-dd")">
+
+    <div class="d-flex justify-content-between align-items-start">
+        <strong>@Model.Title</strong>
+        <span class="task-actions">
+            @if (Model.Status == Tasque.Models.TaskStatus.Done)
+            {
+                <button type="button" class="btn btn-sm btn-outline-success close-task-btn"
+                        data-task-id="@Model.Id"
+                        title="Close Task">
+                    <i class="bi bi-check-circle"></i>
+                </button>
+            }
+            else if (Model.Status == Tasque.Models.TaskStatus.Closed)
+            {
+                <button type="button" class="btn btn-sm btn-outline-warning reopen-task-btn"
+                        data-task-id="@Model.Id"
+                        title="Reopen Task">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-sm btn-outline-secondary edit-task-btn"
+                        data-bs-toggle="modal" data-bs-target="#editTaskModal"
+                        data-task-id="@Model.Id">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            }
+        </span>
+    </div>
+    <small class="text-muted">@Model.Description</small>
+</div>
