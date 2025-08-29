@@ -70,7 +70,9 @@ namespace Tasque.Services
             var tasks = _db.Tasks.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchTitle))
-                tasks = tasks.Where(t => t.Title.Contains(searchTitle));
+                tasks = tasks.Where(t =>  t.Title.ToLower().Contains(searchTitle.ToLower()) || 
+                ((t.Description != null) && t.Description.ToLower().Contains(searchTitle.ToLower()))
+                );
 
             if (status.HasValue)
                 tasks = tasks.Where(t => t.Status == status);

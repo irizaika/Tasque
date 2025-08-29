@@ -1,41 +1,12 @@
-﻿document.addEventListener("DOMContentLoaded", function () {
-    const editButtons = document.querySelectorAll(".edit-description-btn");
-    const taskIdField = document.getElementById("editTaskId");
-    const descriptionField = document.getElementById("editDescriptionText");
-
-    editButtons.forEach(btn => {
-        btn.addEventListener("click", function () {
-            const taskId = this.dataset.taskId;
-            const taskDesc = this.dataset.taskDesc;
-
-            taskIdField.value = taskId;
-            descriptionField.value = taskDesc;
-
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById("editDescriptionModal"));
-            modal.show();
-        });
-    });
-});
-
-//// hide success message
-//window.addEventListener('DOMContentLoaded', () => {
-//        const msg = document.getElementById('floating-message');
-//    if (msg) {
-//        setTimeout(() => {
-//            msg.classList.add('hide');    // optional if you want to completely remove
-//        }, 4000); // 4 seconds
-//    }
-//});
-
-
-// Group by script
-document.addEventListener("DOMContentLoaded", function () {
+﻿document.addEventListener("DOMContentLoaded", () => {
+    const table = document.querySelector("table");
+    const tbody = document.getElementById("taskTableBody");
     const groupBySelect = document.getElementById("groupBySelect");
-    const tableBody = document.getElementById("taskTableBody");
+    const headers = table.querySelectorAll("thead th");
 
-    // Save original flat task list
-    const tasks = Array.from(document.querySelectorAll(".task-row")).map(row => ({
+    // Extract all tasks into state
+    let tasks = Array.from(document.querySelectorAll(".task-row")).map(row => ({
+        id: row.dataset.id,
         html: row.outerHTML,
         assignedto: row.dataset.assignedto || "Unassigned",
         priority: row.dataset.priority || "No Priority",
@@ -43,70 +14,91 @@ document.addEventListener("DOMContentLoaded", function () {
         status: row.dataset.status || "No Status"
     }));
 
-    groupBySelect.addEventListener("change", function () {
-        const key = this.value;
-        if (key) {
-            renderGrouped(key);
-
-        } else {
-            renderFlat();
-        }
-        attachExpandRow();
+    // === Event Delegation ===
+    tbody.addEventListener("click", e => {
+        if (e.target.closest(".edit-description-btn")) handleEditDescriptionTask(e);
+        if (e.target.closest(".edit-task-btn")) handleEditTask(e);
     });
 
-    function getColspan() {
-        const headerRow = document.querySelector("table thead tr");
-        return headerRow ? headerRow.children.length : 1;
+    function handleEditDescriptionTask(e) {
+        const btn = e.target.closest(".edit-description-btn");
+        if (!btn) return;
+
+        document.getElementById("editTaskId").value = btn.dataset.taskId;
+        document.getElementById("editDescriptionText").value = btn.dataset.taskDesc;
+
+        new bootstrap.Modal("#editDescriptionModal").show();
     }
 
-    function renderGrouped(key) {
-        const colspan = getColspan();
-        const grouped = tasks.reduce((acc, t) => {
-            const groupKey = t[key];
-            acc[groupKey] = acc[groupKey] || [];
-            acc[groupKey].push(t.html);
-            return acc;
-        }, {});
+    function handleEditTask(e) {
+        const btn = e.target.closest(".edit-task-btn");
+        const item = btn.closest(".kanban-item");
+        if (!item) return;
 
-        tableBody.innerHTML = "";
-        for (const [groupName, rows] of Object.entries(grouped)) {
-            tableBody.innerHTML += `
-                <tr class="group-header table-primary">
-                    <td colspan="${colspan}"><strong>${capitalize(key)}: ${groupName}</strong> (${rows.length} tasks)</td>
-                </tr>
-                ${rows.join("")}
-            `;
+        const modal = document.getElementById("editTaskModal");
+        modal.querySelector('input[name="Id"]').value = item.dataset.id;
+        modal.querySelector('input[name="Title"]').value = item.dataset.title;
+        modal.querySelector('textarea[name="Description"]').value = item.dataset.description;
+        modal.querySelector('input[name="Group"]').value = item.dataset.group;
+        modal.querySelector('input[name="DueDate"]').value = item.dataset.duedate;
+
+        const statusMap = { "ToDo": "0", "InProgress": "1", "Done": "2", "Closed": "3" };
+        modal.querySelector('select[name="Status"]').value = statusMap[item.dataset.status] || "";
+
+        const priorityMap = { "Low": "0", "Medium": "1", "High": "2" };
+        modal.querySelector('select[name="Priority"]').value = priorityMap[item.dataset.priority] || "";
+    }
+
+    // === Grouping ===
+    groupBySelect.addEventListener("change", () => render());
+
+    function render() {
+        const key = groupBySelect.value;
+        tbody.innerHTML = "";
+
+        if (!key) {
+            tbody.innerHTML = tasks.map(t => t.html).join("");
+            return;
         }
+
+        const groups = groupBy(tasks, key);
+        const colspan = table.querySelector("thead tr").children.length;
+
+        // Define fixed group order if needed
+        const groupOrder = {
+            "priority": ["High", "Medium", "Low"],
+            "status": ["ToDo", "InProgress", "Done", "Closed"]
+        };
+
+        // Get group keys sorted by predefined order (if exists)
+        let orderedGroups = Object.keys(groups);
+        if (groupOrder[key]) {
+            orderedGroups = groupOrder[key].filter(g => groups[g]) // keep only existing
+                .concat(orderedGroups.filter(g => !groupOrder[key].includes(g))); // add extras
+        }
+
+        // Render groups in stable order
+        orderedGroups.forEach(groupName => {
+            const rows = groups[groupName];
+            tbody.insertAdjacentHTML("beforeend", `
+            <tr class="group-header table-primary">
+                <td colspan="${colspan}">
+                    <strong>${capitalize(key)}: ${groupName}</strong> (${rows.length} tasks)
+                </td>
+            </tr>
+            ${rows.map(r => r.html).join("")}
+        `);
+        });
     }
 
-    function renderFlat() {
-        tableBody.innerHTML = tasks.map(t => t.html).join("");
-    }
 
-    function capitalize(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-});
-
-// sorl table items by clicking on header
-document.addEventListener("DOMContentLoaded", function () {
-    const table = document.querySelector("table");
-    const headers = table.querySelectorAll("thead th");
-    const tbody = table.querySelector("tbody");
-
-    const customOrder = {
-        "Priority": ["High", "Medium", "Low"],
-        "Status": ["To Do", "In Progress", "Done"]
-    };
-
-    headers.forEach((header, index) => {
+    // === Sorting ===
+    table.querySelectorAll("thead th").forEach((header, index) => {
         header.style.cursor = "pointer";
+        header.addEventListener("click", () => {
+            const isAsc = header.classList.toggle("asc");
+            header.classList.toggle("desc", !isAsc);
 
-        header.addEventListener("click", function () {
-            const isAscending = header.classList.toggle("asc");
-            header.classList.toggle("desc", !isAscending);
-
-            // Remove arrows from other headers
             headers.forEach(h => {
                 h.querySelector(".sort-arrow")?.remove();
             });
@@ -114,69 +106,68 @@ document.addEventListener("DOMContentLoaded", function () {
             // Add arrow to current header
             const arrow = document.createElement("span");
             arrow.classList.add("sort-arrow");
-            arrow.innerHTML = isAscending ? " ▲" : " ▼"; // Unicode arrows
+            arrow.innerHTML = isAsc ? "▲" : "▼"; // Unicode arrows
             header.appendChild(arrow);
 
-            // Check if there are group headers
-            const groupHeaders = tbody.querySelectorAll(".group-header");
-
-            if (groupHeaders.length > 0) {
-                let groupRows = [];
-
-                Array.from(tbody.children).forEach(row => {
-                    if (row.classList.contains("group-header")) {
-                        if (groupRows.length) {
-                            sortRows(groupRows, index, isAscending);
-                            groupRows.forEach(r => tbody.insertBefore(r, row));
-                        }
-                        groupRows = [];
-                    } else {
-                        groupRows.push(row);
-                    }
-                });
-
-                if (groupRows.length) {
-                    sortRows(groupRows, index, isAscending);
-                    groupRows.forEach(r => tbody.appendChild(r));
-                }
-
-            } else {
-                const rows = Array.from(tbody.querySelectorAll("tr"))
-                    .filter(r => !r.classList.contains("group-header"));
-
-                sortRows(rows, index, isAscending);
-                rows.forEach(row => tbody.appendChild(row));
-            }
+            tasks = sortTasks(tasks, index, isAsc, header.textContent.trim());
+            render();
         });
     });
 
-    function sortRows(rows, colIndex, isAscending) {
-        rows.sort((a, b) => {
-            const cellA = a.children[colIndex].textContent.trim();
-            const cellB = b.children[colIndex].textContent.trim();
+    // === Helpers ===
+    function groupBy(items, key) {
+        return items.reduce((acc, t) => {
+            const groupKey = t[key] || "Unknown";
+            (acc[groupKey] ||= []).push(t);
+            return acc;
+        }, {});
+    }
 
-            const columnName = table.querySelectorAll("thead th")[colIndex].textContent.trim();
+    function sortTasks(items, colIndex, asc, colName) {
+        const customOrder = {
+            "Priority": ["High", "Medium", "Low"],
+            "Status": ["ToDo", "InProgress", "Done", "Closed"]
+        };
 
-            if (customOrder[columnName]) {
-                const order = customOrder[columnName];
-                const posA = order.indexOf(cellA);
-                const posB = order.indexOf(cellB);
-                return isAscending ? posA - posB : posB - posA;
+        return [...items].sort((a, b) => {
+            const valA = getCellText(a.html, colIndex);
+            const valB = getCellText(b.html, colIndex);
+
+            if (customOrder[colName]) {
+                const order = customOrder[colName];
+                return asc ? order.indexOf(valA) - order.indexOf(valB)
+                    : order.indexOf(valB) - order.indexOf(valA);
             }
-
-            const aNum = parseFloat(cellA.replace(",", "."));
-            const bNum = parseFloat(cellB.replace(",", "."));
-            if (!isNaN(aNum) && !isNaN(bNum)) {
-                return isAscending ? aNum - bNum : bNum - aNum;
-            }
-
-            return isAscending
-                ? cellA.localeCompare(cellB)
-                : cellB.localeCompare(cellA);
+            return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
         });
     }
+
+    function getCellText(html, colIndex) {
+        const tmp = document.createElement("tr");
+        tmp.innerHTML = html;
+        return tmp.children[colIndex]?.textContent.trim() || "";
+    }
+
+    const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+      // === Default Sort by Priority ===
+    const defaultCol = "Priority";  // column name to sort
+    const defaultAsc = true;        // true = High → Low (based on your customOrder array)
+
+    // Find the index of the Priority column
+    const defaultHeader = Array.from(headers).find(h => h.textContent.trim() === defaultCol);
+    if (defaultHeader) {
+        const colIndex = Array.from(headers).indexOf(defaultHeader);
+        tasks = sortTasks(tasks, colIndex, defaultAsc, defaultCol);
+
+        // Add arrow to show it's sorted
+        const arrow = document.createElement("span");
+        arrow.classList.add("sort-arrow");
+        arrow.innerHTML = defaultAsc ? "▲" : "▼";
+        defaultHeader.appendChild(arrow);
+        defaultHeader.classList.add(defaultAsc ? "asc" : "desc");
+    }
+
+    // Initial render
+    render();
 });
-
-
-
-

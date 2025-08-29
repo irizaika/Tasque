@@ -1,245 +1,118 @@
 ﻿document.addEventListener("DOMContentLoaded", function () {
     let draggedItem = null;
 
-    // Bind dragstart on all current and future tasks
-    function bindDragAndDrop() {
-        document.querySelectorAll(".kanban-item").forEach(item => {
-            item.addEventListener("dragstart", function (e) {
-                draggedItem = this;
-                e.dataTransfer.setData("text/plain", this.dataset.id);
-            });
+    // -------------------- DRAG & DROP --------------------
+    document.addEventListener("dragstart", e => {
+        const item = e.target.closest(".kanban-item");
+        if (!item) return;
+        draggedItem = item;
+        e.dataTransfer.setData("text/plain", item.dataset.id);
+    });
 
-            item.addEventListener("dragend", function () {
-                draggedItem = null;
-            });
+    document.addEventListener("dragend", () => {
+        draggedItem = null;
+    });
+
+    document.querySelectorAll(".kanban-column").forEach(col => {
+        col.addEventListener("dragover", e => {
+            e.preventDefault();
+            col.classList.add("drop-target");
+        });
+        col.addEventListener("dragleave", () => col.classList.remove("drop-target"));
+        col.addEventListener("drop", e => {
+            e.preventDefault();
+            col.classList.remove("drop-target");
+            if (!draggedItem) return;
+
+            const newStatus = col.dataset.status;
+            moveTask(draggedItem, newStatus, col);
+        });
+    });
+
+    // -------------------- CLICK HANDLERS (delegated) --------------------
+    document.addEventListener("click", e => {
+        if (e.target.closest(".close-task-btn")) handleCloseTask(e);
+        if (e.target.closest(".reopen-task-btn")) handleReopenTask(e);
+        if (e.target.closest(".edit-task-btn")) handleEditTask(e);
+    });
+
+    // -------------------- HELPERS --------------------
+    function moveTask(taskElem, newStatus, colElem) {
+        const taskId = taskElem.dataset.id;
+        const groupKey = colElem.dataset.groupKey || null;
+        const groupBy = colElem.closest("[data-groupby]")?.dataset.groupby || null;
+
+        // Move in DOM
+        colElem.querySelector(".card-body").appendChild(taskElem);
+        taskElem.dataset.status = newStatus;
+
+        // Update button
+        renderTaskActions(taskElem, newStatus);
+
+        // Notify backend
+        fetch(`/Kanban/UpdateTaskFromDrag`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: taskId, status: newStatus, groupBy, groupValue: groupKey })
+        }).then(res => {
+            if (!res.ok) alert("Update failed");
         });
     }
 
-    // Bind click for close buttons
-    function bindCloseTaskButtons() {
-        document.querySelectorAll(".close-task-btn").forEach(btn => {
-            btn.removeEventListener("click", closeTaskHandler); // prevent duplicates
-            btn.addEventListener("click", closeTaskHandler);
-        });
+    function renderTaskActions(taskElem, status) {
+        const actions = taskElem.querySelector(".task-actions");
+        if (!actions) return;
+
+        const buttons = {
+            "ToDo": `<button class="btn btn-sm btn-outline-secondary edit-task-btn" data-task-id="${taskElem.dataset.id}" data-bs-toggle="modal" data-bs-target="#editTaskModal"><i class="bi bi-pencil"></i></button>`,
+            "InProgress": `<button class="btn btn-sm btn-outline-secondary edit-task-btn" data-task-id="${taskElem.dataset.id}" data-bs-toggle="modal" data-bs-target="#editTaskModal"><i class="bi bi-pencil"></i></button>`,
+            "Done": `<button class="btn btn-sm btn-outline-success close-task-btn" data-task-id="${taskElem.dataset.id}"><i class="bi bi-check-circle"></i></button>`,
+            "Closed": `<button class="btn btn-sm btn-outline-warning reopen-task-btn" data-task-id="${taskElem.dataset.id}"><i class="bi bi-arrow-counterclockwise"></i></button>`
+        };
+
+        actions.innerHTML = buttons[status] || "";
     }
 
-    // Handle Close Task button click
-    function closeTaskHandler(event) {
-        event.preventDefault();
-        const btn = event.currentTarget;
-        const taskId = btn.getAttribute("data-task-id");
-
+    // -------------------- ACTION HANDLERS --------------------
+    function handleCloseTask(e) {
+        const btn = e.target.closest(".close-task-btn");
+        const taskId = btn.dataset.taskId;
         if (!confirm("Mark this task as closed?")) return;
 
-        fetch(`/Kanban/CloseTask/${taskId}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
-            }
-        }).then(response => {
-            if (response.ok) {
-                const taskElem = btn.closest(".kanban-item");
-                if (taskElem) {
-                    taskElem.dataset.status = "Closed";
-
-                    // Update button to reopen
-                    updateTaskButton(taskElem, "Closed");
-
-                    // Move into Closed column
-                    const closedCol = document.querySelector(`.kanban-column[data-status="Closed"][data-group-key="${taskElem.closest('[data-group-key]').dataset.groupKey}"] .card-body`);
-                    if (closedCol) {
-                        closedCol.appendChild(taskElem);
-                    }
-
-                    bindReopenTaskButtons();
-                }
-            } else {
-                alert("Failed to close task");
-            }
-        });
+        fetch(`/Kanban/CloseTask/${taskId}`, { method: "POST" })
+            .then(r => r.ok ? moveTask(btn.closest(".kanban-item"), "Closed", getColumn("Closed", btn)) : alert("Failed"));
     }
 
-    function reopenTaskHandler(event) {
-        event.preventDefault();
-        const btn = event.currentTarget;
-        const taskId = btn.getAttribute("data-task-id");
-
+    function handleReopenTask(e) {
+        const btn = e.target.closest(".reopen-task-btn");
+        const taskId = btn.dataset.taskId;
         if (!confirm("Reopen this task?")) return;
 
-        fetch(`/Kanban/ReopenTask/${taskId}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" }
-        }).then(response => {
-            if (response.ok) {
-                const taskElem = btn.closest(".kanban-item");
-                if (taskElem) {
-                    taskElem.dataset.status = "ToDo";
-
-                    // Update button back to edit
-                    updateTaskButton(taskElem, "ToDo");
-
-                    // Move to ToDo column
-                    const todoCol = document.querySelector(`.kanban-column[data-status="ToDo"][data-group-key="${taskElem.closest('[data-group-key]').dataset.groupKey}"] .card-body`);
-                    if (todoCol) {
-                        todoCol.appendChild(taskElem);
-                    }
-
-                    bindEditTaskButtons();
-                    bindCloseTaskButtons();
-                }
-            } else {
-                alert("Failed to reopen task");
-            }
-        });
+        fetch(`/Kanban/ReopenTask/${taskId}`, { method: "POST" })
+            .then(r => r.ok ? moveTask(btn.closest(".kanban-item"), "ToDo", getColumn("ToDo", btn)) : alert("Failed"));
     }
 
-    function bindReopenTaskButtons() {
-        document.querySelectorAll(".reopen-task-btn").forEach(btn => {
-            btn.removeEventListener("click", reopenTaskHandler);
-            btn.addEventListener("click", reopenTaskHandler);
-        });
+    function handleEditTask(e) {
+        const btn = e.target.closest(".edit-task-btn");
+        const item = btn.closest(".kanban-item");
+        if (!item) return;
+
+        const modal = document.getElementById("editTaskModal");
+        modal.querySelector('input[name="Id"]').value = item.dataset.id;
+        modal.querySelector('input[name="Title"]').value = item.dataset.title;
+        modal.querySelector('textarea[name="Description"]').value = item.dataset.description;
+        modal.querySelector('input[name="Group"]').value = item.dataset.group;
+        modal.querySelector('input[name="DueDate"]').value = item.dataset.duedate;
+
+        const statusMap = { "ToDo": "0", "InProgress": "1", "Done": "2", "Closed": "3" };
+        modal.querySelector('select[name="Status"]').value = statusMap[item.dataset.status] || "";
+
+        const priorityMap = { "Low": "0", "Medium": "1", "High": "2" };
+        modal.querySelector('select[name="Priority"]').value = priorityMap[item.dataset.priority] || "";
     }
 
-
-    // Update task button based on status
-    function updateTaskButton(taskElem, status) {
-        const actionsSpan = taskElem.querySelector('.task-actions');
-        if (!actionsSpan) return;
-
-        if (status === 'Done') {
-            actionsSpan.innerHTML = `
-        <button type="button" class="btn btn-sm btn-outline-success close-task-btn" data-task-id="${taskElem.dataset.id}" title="Close Task">
-          <i class="bi bi-check-circle"></i>
-        </button>
-      `;
-        } else if (status === 'Closed') {
-            actionsSpan.innerHTML = `
-        <button type="button" class="btn btn-sm btn-outline-success reopen-task-btn" data-task-id="${taskElem.dataset.id}" title="Close Task">
-          <i class="bi bi-arrow-counterclockwise"></i>
-        </button>
-      `;
-        } else {
-            actionsSpan.innerHTML = `
-        <button type="button" class="btn btn-sm btn-outline-secondary edit-task-btn" data-bs-toggle="modal" data-bs-target="#editTaskModal" data-task-id="${taskElem.dataset.id}">
-          <i class="bi bi-pencil"></i>
-        </button>
-      `;
-        }
+    function getColumn(status, elem) {
+        const groupKey = elem.closest("[data-group-key]")?.dataset.groupKey;
+        return document.querySelector(`.kanban-column[data-status="${status}"][data-group-key="${groupKey}"]`);
     }
-
-    // Setup columns to handle dragover and drop
-    function bindColumns() {
-        document.querySelectorAll(".kanban-column").forEach(column => {
-            column.addEventListener("dragover", function (e) {
-                e.preventDefault();
-                this.classList.add("drop-target");
-            });
-
-            column.addEventListener("dragleave", function () {
-                this.classList.remove("drop-target");
-            });
-
-            column.addEventListener("drop", function (e) {
-                e.preventDefault();
-                this.classList.remove("drop-target");
-
-                if (!draggedItem) return;
-
-                const taskId = draggedItem.dataset.id;
-                const newStatus = this.dataset.status;
-                const groupKey = this.dataset.groupKey || null;
-                const groupBy = this.closest("[data-groupby]")?.dataset.groupby || null;
-
-                // Append dragged item into new column's card body
-                this.querySelector(".card-body").appendChild(draggedItem);
-
-                // Update status attribute on task element
-                draggedItem.setAttribute("data-status", newStatus);
-
-                // Send update to backend
-                fetch(`/Kanban/UpdateTaskFromDrag`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        id: taskId,
-                        status: newStatus,
-                        groupBy: groupBy,
-                        groupValue: groupKey
-                    })
-                }).then(res => {
-                    if (!res.ok) alert("Update failed");
-                });
-                showSpinner();
-
-                // Update button inside task depending on status
-                updateTaskButton(draggedItem, newStatus);
-
-                // Re-bind close buttons for new buttons
-                bindCloseTaskButtons();
-                bindEditTaskButtons();
-                hideSpinner();
-
-                draggedItem = null;
-            });
-        });
-    }
-    // Initial binding on page load
-    bindDragAndDrop();
-    bindCloseTaskButtons();
-    bindColumns();
-    bindEditTaskButtons();
-    bindReopenTaskButtons();
 });
-
-function bindEditTaskButtons() {
-    document.querySelectorAll(".edit-task-btn").forEach(btn => {
-        btn.removeEventListener("click", editTaskHandler);
-        btn.addEventListener("click", editTaskHandler);
-    });
-}
-
-function editTaskHandler(e) {
-    const btn = e.currentTarget;
-    const item = btn.closest(".edit-task-item");
-
-    if (!item) return;
-
-    const status = item.dataset.status;
-    const priority = item.dataset.priority;
-    const title = item.dataset.title;
-    const description = item.dataset.description;
-    const group = item.dataset.group;
-    const dueDate = item.dataset.duedate;
-    const id = item.dataset.id;
-
-    const modal = document.getElementById("editTaskModal");
-
-    modal.querySelector('input[name="Id"]').value = id;
-    modal.querySelector('input[name="Title"]').value = title;
-    modal.querySelector('textarea[name="Description"]').value = description;
-    modal.querySelector('input[name="Group"]').value = group;
-    modal.querySelector('input[name="DueDate"]').value = dueDate;
-
-    const statusMap = { "ToDo": "0", "InProgress": "1", "Done": "2", "Closed": "3" };
-    const statusSelect = modal.querySelector('select[name="Status"]');
-    if (statusSelect) {
-        statusSelect.value = statusMap[status] || "";
-    }
-
-    const priorityMap = { "Low": "0", "Medium": "1", "High": "2" };
-    const prioritySelect = modal.querySelector('select[name="Priority"]');
-    if (prioritySelect) {
-        prioritySelect.value = priorityMap[priority];
-    }
-}
-
-
-
-function showSpinner() {
-    document.getElementById("globalSpinner").classList.remove("d-none");
-}
-
-function hideSpinner() {
-    document.getElementById("globalSpinner").classList.add("d-none");
-}
