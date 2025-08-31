@@ -24,5 +24,7 @@ namespace Tasque.Models
         public DateTime? DueDate { get; set; }
 
         public string CreatedBy { get; set; } // user email
+
+        public string TenantId { get; set; } = "";
     }
 }

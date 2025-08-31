@@ -8,12 +8,38 @@ namespace Tasque.Services
     public class TaskService : ITaskService
     {
         private readonly AppDbContext _db;
-        public TaskService(AppDbContext db) => _db = db;
+        public TaskService(AppDbContext db)
+        {
+            _db = db;
+        }
 
-        public IEnumerable<TaskItem> GetTasksForUser(string userEmail, bool isAdmin) =>
-            isAdmin ? _db.Tasks.ToList() : _db.Tasks.Where(t => t.AssignedTo == userEmail).ToList();
+        public IEnumerable<TaskItem> GetTasksForUser(string userEmail, bool isAdmin)
+        {
+            List<TaskItem> tasks = new List<TaskItem>();
+            try
+            {
+                if (isAdmin)
+                {
+                    tasks = _db.Tasks.ToList();
+                }
+                else
+                {
+                    tasks = _db.Tasks.Where(t => t.AssignedTo == userEmail).ToList();
 
-        public IEnumerable<TaskItem> GetAllTasks() => _db.Tasks.ToList();
+                }
+            }
+            catch (Exception ex)
+            { 
+                Console.Write(ex.ToString());
+            }
+
+            return tasks;
+        }
+
+        public IEnumerable<TaskItem> GetAllTasks()
+        {
+            return _db.Tasks.ToList();
+        }
 
         public TaskItem GetTaskById(int id)
         {

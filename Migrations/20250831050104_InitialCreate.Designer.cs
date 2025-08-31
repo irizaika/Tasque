@@ -10,8 +10,8 @@ using Tasque.Repositories;
 
 namespace Tasque.Migrations
 {
-    [DbContext(typeof(TaskDbContext))]
-    [Migration("20250810190116_InitialCreate")]
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20250831050104_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -38,14 +38,12 @@ namespace Tasque.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Group")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Priority")
@@ -54,6 +52,10 @@ namespace Tasque.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -61,6 +63,26 @@ namespace Tasque.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Tasks");
+                });
+
+            modelBuilder.Entity("Tasque.Models.Tenant", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConnectionString")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tenants");
                 });
 #pragma warning restore 612, 618
         }

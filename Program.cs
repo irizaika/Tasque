@@ -25,6 +25,8 @@ namespace Tasque
 
             // --- Custom Services ---
             builder.Services.AddScoped<ITaskService, TaskService>();
+            builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            builder.Services.AddScoped<ITenantProvider, TenantProvider>(); // to do change it
 
             // --- Authentication & Authorization ---
             builder.Services.AddAuthentication(options =>
