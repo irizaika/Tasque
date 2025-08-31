@@ -140,6 +140,23 @@ See Privacy Policy
 
 ---
 
+## 🔐 Multi-Tenancy
+
+Tenant Resolution:
+- Taskque maps Azure AD Group Object IDs (GUIDs) → Tenant names using appsettings.json.
+- Each task row includes a TenantId (currently storing the tenant name) to ensure isolation.
+- Example mapping in configuration:
+``` json
+  "TenantGroups": {
+    "22222222-1111-3333-4444-555555555555": "mytasks",
+    "11111111-2222-3333-4444-555555555555": "mytasks"
+  }
+```
+This allows multiple organizations (tenants) to share one database while keeping their data separate.
+⚠️ Note: The tenant model (Tenant table) is defined in code but not yet active. Currently, tenant resolution is config-based. Future versions may support dynamic tenant provisioning.
+
+---
+
 ## ⚠️ Known Limitations
 
 Not production-ready
@@ -152,18 +169,12 @@ Data may be deleted at any time
 ## 🛠 Future Plans
 1. Multi-tenancy Support
 
-- Each organization (tenant) will have its own isolated set of tasks and users.
-- Users will only see tasks belonging to their tenant.
-- Admins within a tenant will manage tasks and users only for their own tenant.
-- Implementation options:
-	- Database-per-tenant (full isolation, best for strong separation)
-	- Shared database with tenant ID column (simpler, but requires strict row-level security).
+- Current: Shared database with TenantId column (tenant name from config mapping).
+- Future: Enable dynamic tenant creation (self-service onboarding).
 
 2. Tenant-level Admin Roles
 
 - Global Admin: manages all tenants (system owner).
-- Tenant Admin: manages users and tasks within their own tenant.
-- Regular Users: manage only their own tasks.
 
 3. Enhanced Collaboration
 
