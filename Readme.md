@@ -148,9 +148,14 @@ Tenant Resolution:
 - Example mapping in configuration:
 ``` json
   "TenantGroups": {
-    "22222222-1111-3333-4444-555555555555": "mytasks",
-    "11111111-2222-3333-4444-555555555555": "mytasks"
-  }
+    "tenatn1": {
+      "AdminsGroupId": "22222222-1111-3333-4444-555555555555",
+      "UsersGroupId": "11111111-2222-3333-4444-555555555555"
+    },
+    "tenant2": {
+      "AdminsGroupId": "11111111-9999-8888-3333-555555555555",
+      "UsersGroupId": "77777777-2222-3333-4444-333333333333"
+    }
 ```
 This allows multiple organizations (tenants) to share one database while keeping their data separate.
 ⚠️ Note: The tenant model (Tenant table) is defined in code but not yet active. Currently, tenant resolution is config-based. Future versions may support dynamic tenant provisioning.
