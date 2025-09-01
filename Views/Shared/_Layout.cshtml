@@ -50,16 +50,37 @@
                 @using Microsoft.AspNetCore.Authentication
                 @using Microsoft.AspNetCore.Authentication.Cookies
 
-                @if (User.Identity.IsAuthenticated)
-                {
-                    <span>Hello, @User.Identity.Name!</span>
-                    <form asp-controller="Account" asp-action="Logout" method="post" style="display:inline">
-                        <button type="submit" class="btn btn-link">Logout</button>
-                    </form>
+                @inject IConfiguration Config
+                @{
+                    var showDevLogin = Config.GetValue<bool>("ShowDevLogin");
                 }
-                else
+                @if (showDevLogin)
                 {
-                    <a class="btn btn-primary" asp-controller="Account" asp-action="Login">Login</a>
+                    if (User.Identity?.IsAuthenticated ?? false)
+                    {
+                        <span class="nav-link">Hello, @User.Identity.Name (@User.FindFirst("tenant_id")?.Value)</span>
+                        <form asp-controller="DevLogin" asp-action="Logout" method="post" style="display:inline">
+                            <button type="submit" class="btn btn-link">Logout</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a class="btn btn-primary" asp-controller="DevLogin" asp-action="Index">Dev Login</a>
+                    }
+                }
+                else 
+                {
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <span>Hello, @User.Identity.Name!</span>
+                        <form asp-controller="Account" asp-action="Logout" method="post" style="display:inline">
+                            <button type="submit" class="btn btn-link">Logout</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a class="btn btn-primary" asp-controller="Account" asp-action="Login">Login</a>
+                    }
                 }
             </div>
         </nav>

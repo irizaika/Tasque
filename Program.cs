@@ -36,11 +36,22 @@ public class Program
         app.UseAuthorization();
 
         app.MapStaticAssets();
-        app.MapControllerRoute(
-            name: "default",
-            pattern: "{controller=Home}/{action=Index}/{id?}")
-            .WithStaticAssets();
 
+        var showDevLogin = config.GetValue<bool>("ShowDevLogin");
+        if (showDevLogin)
+        {
+            app.MapControllerRoute(
+                name: "devlogin",
+                pattern: "{controller=DevLogin}/{action=Index}/{id?}")
+                .WithStaticAssets();
+        }
+        else
+        {
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller=Home}/{action=Index}/{id?}")
+                .WithStaticAssets();
+        }
         app.Run();
     }
 }

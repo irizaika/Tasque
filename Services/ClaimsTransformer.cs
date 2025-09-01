@@ -9,13 +9,22 @@ namespace Tasque.Services
     {
         public static Task Transform(TokenValidatedContext context)
         {
-            // Debug: log all claims
-            //foreach (var claim in context.Principal.Claims)
-            //    Console.WriteLine($"{claim.Type}: {claim.Value}");
-
             var identity = (ClaimsIdentity)context.Principal.Identity;
             if (identity != null)
             {
+
+                var nameClaim = context.Principal.FindFirst("name")?.Value;
+                if (!string.IsNullOrEmpty(nameClaim))
+                {
+                    identity.AddClaim(new Claim(ClaimTypes.Name, nameClaim));
+                }
+
+                var emailClaim = context.Principal.FindFirst(ClaimTypes.Email)?.Value;
+                if (!string.IsNullOrEmpty(emailClaim))
+                {
+                    identity.AddClaim(new Claim(ClaimTypes.Email, emailClaim));
+                }
+
                 var settings = context.HttpContext.RequestServices
                                  .GetRequiredService<IOptions<MultiTenantSettings>>()
                                  .Value;

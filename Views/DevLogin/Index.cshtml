@@ -1,0 +1,39 @@
+﻿<!-- This is for test, contorller DevLogin is used --> 
+@{
+    ViewData["Title"] = "Dev Login";
+}
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card shadow-lg rounded-3" style="width: 28rem;">
+        <div class="card-body p-4">
+            <h2 class="card-title text-center mb-4">Dev Login</h2>
+
+            <form method="post" asp-controller="DevLogin" asp-action="Index">
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" value="test@gmail.com" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Tenant</label>
+                    <select name="tenant" class="form-select">
+                        <option value="mytasks">mytasks</option>
+                        <option value="friends">friends</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Role</label>
+                    <select name="role" class="form-select">
+                        <option value="Admin">Admin</option>
+                        <option value="User">User</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary w-100" type="submit">
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
